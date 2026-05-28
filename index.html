@@ -31,7 +31,13 @@
   /* Header */
   .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
   .header h1{font-size:17px;font-weight:600;display:flex;align-items:center;gap:7px}
-  .theme-btn{background:none;border:1px solid var(--border2);border-radius:20px;padding:5px 11px;font-size:13px;color:var(--text2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .theme-btn{
+    background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);
+    padding:13px;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;
+    -webkit-tap-highlight-color:transparent;display:flex;align-items:center;
+    justify-content:center;gap:8px;width:100%;transition:all .15s;
+  }
+  .theme-btn:active{transform:scale(.96)}
 
   /* Toggle bar */
   .toggle-bar{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px}
@@ -126,14 +132,8 @@
     <button class="btn btn-copy" onclick="copyText()">Sao chép</button>
     <button class="btn btn-clear" onclick="clearAll()">Xóa trắng</button>
   </div>
-<div class="btn-row" style="display:flex;justify-content:center;margin-top:10px;">
-    <button
-        class="theme-btn"
-        id="theme-btn"
-        onclick="toggleTheme()"
-        style="width:210x;height:60px;font-size:32px;border-radius:20px;">
-        🌙 Dark
-    </button>
+<div style="margin-top:8px;">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
 </div>
   </div>
 <div class="toast" id="toast"></div>
@@ -149,12 +149,9 @@ const ADDR_LOWER = new Set(['đường','quận','phường','hẻm','ngõ','xã
 // Nguồn sự thật duy nhất: values + xeMode + mota chips
 let values = {};
 INPUT_FIELDS.forEach(f => values[f] = '');
-values['Giá xe'] = '';
 let xeMode = null;
 // xeTyped = true khi người dùng tự gõ tay vào dòng xe
 let xeTyped = false;
-// isComposing = true khi IME đang soạn (tiếng Việt mobile)
-let isComposing = false;
 
 // ── Boot ──────────────────────────────────────────────────
 initTheme();
@@ -175,8 +172,6 @@ function buildText(){
   // Giá xe
   if(xeMode){
     body = body.replace(/\{Giá xe\}\S*/g, xeMode);
-  } else if(xeTyped && values['Giá xe']){
-    body = body.replace(/\{Giá xe\}/, values['Giá xe']);
   }
   return (showMoi ? 'Dự án mới\n' : '') + body;
 }
@@ -226,14 +221,25 @@ function updateXeChipState(){
 // ── Editor thông minh ─────────────────────────────────────
 function setupEditor(){
   const ta = document.getElementById('preview');
+  let isComposing = false;
 
   // Focus → nhảy vào {} đầu tiên
   ta.addEventListener('focus', ()=> setTimeout(()=> jumpTo(ta, findFirstBrace(ta.value, 0)), 30));
 
   ta.addEventListener('click', ()=> updateFieldLabel());
 
+  // Theo dõi IME composition (gõ Tiếng Việt trên mobile)
+  ta.addEventListener('compositionstart', ()=>{ isComposing = true; });
+  ta.addEventListener('compositionend', ()=>{
+    isComposing = false;
+    syncActiveField(ta); // sync sau khi hoàn thành compose
+  });
+
   ta.addEventListener('keydown', e=>{
     const ta = e.target;
+    // Bỏ qua khi đang IME compose (gõ Tiếng Việt)
+    if(isComposing || e.isComposing) return;
+
     if(e.key === 'Enter'){
       e.preventDefault();
       // Tìm {} tiếp theo từ vị trí caret hiện tại
@@ -266,11 +272,12 @@ function setupEditor(){
   });
 
   ta.addEventListener('input', e=>{
-    // Trường hợp mobile: input event thay vì keydown
+    // Bỏ qua khi đang trong quá trình IME compose
+    if(isComposing || e.isComposing) return;
     syncActiveField(ta);
   });
 
-  ta.addEventListener('keyup', ()=> updateFieldLabel());
+  ta.addEventListener('keyup', ()=>{ if(!isComposing) updateFieldLabel(); });
   ta.addEventListener('selectionchange', ()=> updateFieldLabel());
 }
 
@@ -379,16 +386,19 @@ function syncActiveField(ta){
     if(!xeTyped){ xeMode = null; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
   }
   if(fname === 'Địa chỉ' && val){
-    const capitalized = capitalizeAddr(val);
-    if(capitalized !== val){
-      const caret = ta.selectionStart;
-      values[fname] = capitalized;
-      renderPreview(false);
-      ta.selectionStart = ta.selectionEnd = caret;
-      updateXeChipState();
-      updateFieldLabel();
-      return;
-    }
+    // Dùng setTimeout để không gọi renderPreview() giữa chừng khi đang gõ Tiếng Việt
+    setTimeout(()=>{
+      const currentVal = values['Địa chỉ'];
+      const capitalized = capitalizeAddr(currentVal);
+      if(capitalized !== currentVal){
+        const caret = ta.selectionStart;
+        values['Địa chỉ'] = capitalized;
+        renderPreview(false);
+        ta.selectionStart = ta.selectionEnd = caret;
+        updateXeChipState();
+        updateFieldLabel();
+      }
+    }, 300);
   }
   values[fname] = val;
   updateXeChipState();
