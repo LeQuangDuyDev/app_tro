@@ -149,9 +149,12 @@ const ADDR_LOWER = new Set(['đường','quận','phường','hẻm','ngõ','xã
 // Nguồn sự thật duy nhất: values + xeMode + mota chips
 let values = {};
 INPUT_FIELDS.forEach(f => values[f] = '');
+values['Giá xe'] = '';
 let xeMode = null;
 // xeTyped = true khi người dùng tự gõ tay vào dòng xe
 let xeTyped = false;
+// isComposing = true khi IME đang soạn (tiếng Việt mobile)
+let isComposing = false;
 
 // ── Boot ──────────────────────────────────────────────────
 initTheme();
@@ -172,6 +175,8 @@ function buildText(){
   // Giá xe
   if(xeMode){
     body = body.replace(/\{Giá xe\}\S*/g, xeMode);
+  } else if(xeTyped && values['Giá xe']){
+    body = body.replace(/\{Giá xe\}/, values['Giá xe']);
   }
   return (showMoi ? 'Dự án mới\n' : '') + body;
 }
