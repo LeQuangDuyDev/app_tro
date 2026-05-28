@@ -108,13 +108,12 @@
 
   <!-- Chips Mô tả — dưới preview -->
   <div class="card">
-    <div class="section-label">Mô tả</div>
+
     <div class="chips" id="mota-chips"></div>
   </div>
 
   <!-- Chips Giá xe — dưới Mô tả -->
   <div class="card">
-    <div class="section-label">Giá xe</div>
     <div class="xe-chips">
       <div class="xe-chip" onclick="setXe('free xe',this)">Free xe</div>
       <div class="xe-chip" onclick="setXe('free 1 xe',this)">Free 1 xe</div>
@@ -127,8 +126,8 @@
     <button class="btn btn-copy" onclick="copyText()">Sao chép</button>
     <button class="btn btn-clear" onclick="clearAll()">Xóa trắng</button>
   </div>
-  <div class="btn-row">
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
+ <div class="theme-toggle-container" style="display: flex; justify-content: center; margin-top: 10px;">
+    <button class="btn-theme" id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
 </div>
   </div>
 <div class="toast" id="toast"></div>
