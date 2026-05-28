@@ -139,7 +139,7 @@
 <div class="toast" id="toast"></div>
 <script>
 // ── Cấu hình ──────────────────────────────────────────────
-const TPL_BODY = '📍{Địa chỉ}\n💰{Giá} - {Mô tả}\n⚡ Điện: {Giá điện}k/Kwh\n💧 Nước: {Giá nước}k/người\n💲 Dvu: {Phí dịch vụ}k/phòng\n🏍️ Xe: {Giá xe}k/xe';
+const TPL_BODY = '📍{Địa chỉ}\n💰 Giá: {Giá} - {Mô tả}\n⚡ Điện: {Giá điện}k/Kwh\n💧 Nước: {Giá nước}k/người\n💲 Dịch vụ: {Phí dịch vụ}k/phòng\n🏍️ Xe: {Giá xe}k/xe';
 const MOTA_OPTS = ['1PN','2PN','1PK','Studio','Gác','Ban công','Cửa sổ','Cửa sổ trời','Tách bếp','Máy giặt riêng','Thang máy'];
 // Thứ tự nhảy khi Enter — bỏ qua Mô tả (chip) và Giá xe (chip)
 const INPUT_FIELDS = ['Địa chỉ','Giá','Giá điện','Giá nước','Phí dịch vụ'];
@@ -152,6 +152,7 @@ INPUT_FIELDS.forEach(f => values[f] = '');
 let xeMode = null;
 // xeTyped = true khi người dùng tự gõ tay vào dòng xe
 let xeTyped = false;
+let xeValue = '';
 
 // ── Boot ──────────────────────────────────────────────────
 initTheme();
@@ -172,6 +173,8 @@ function buildText(){
   // Giá xe
   if(xeMode){
     body = body.replace(/\{Giá xe\}\S*/g, xeMode);
+  } else if(xeTyped && xeValue){
+    body = body.split('{Giá xe}').join(xeValue);
   }
   return (showMoi ? 'Dự án mới\n' : '') + body;
 }
@@ -334,7 +337,7 @@ function getSelectedPlaceholder(ta){
 function replaceSelected(ta, sel, firstChar){
   const fname = sel.name;
   if(fname === 'Giá xe'){
-    xeTyped = true; xeMode = null;
+    xeTyped = true; xeMode = null; xeValue = firstChar;
     document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active'));
   }
   if(fname === 'Địa chỉ') firstChar = firstChar.toUpperCase();
@@ -383,6 +386,7 @@ function syncActiveField(ta){
 
   if(fname === 'Giá xe'){
     xeTyped = val !== '';
+    xeValue = xeTyped ? val : '';
     if(!xeTyped){ xeMode = null; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
   }
   if(fname === 'Địa chỉ' && val){
@@ -448,7 +452,7 @@ function fallbackCopy(text){
 }
 function clearAll(){
   INPUT_FIELDS.forEach(f => values[f] = '');
-  xeMode = null; xeTyped = false;
+  xeMode = null; xeTyped = false; xeValue = '';
   document.querySelectorAll('#mota-chips .chip').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('.xe-chip').forEach(c=>c.classList.remove('active','disabled'));
   renderPreview();
