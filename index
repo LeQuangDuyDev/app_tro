@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Phòng trọ</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f8f7f4;--surface:#ffffff;--border:#e5e3dc;--border2:#d1cfc8;
+    --text:#1a1a1a;--text2:#666;--text3:#aaa;
+    --blue-bg:#eff6ff;--blue-border:#bfdbfe;--blue-text:#1d4ed8;
+    --red-bg:#fef2f2;--red-border:#fecaca;--red-text:#dc2626;
+    --radius:10px;--radius-sm:7px;
+  }
+  [data-theme="dark"]{
+    --bg:#111110;--surface:#1c1c1a;--border:#2e2e2b;--border2:#3d3d3a;
+    --text:#f0ede6;--text2:#9a9790;--text3:#555;
+    --blue-bg:#1e2d40;--blue-border:#2563eb;--blue-text:#93c5fd;
+    --red-bg:#2d1515;--red-border:#dc2626;--red-text:#fca5a5;
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme]){
+    --bg:#111110;--surface:#1c1c1a;--border:#2e2e2b;--border2:#3d3d3a;
+    --text:#f0ede6;--text2:#9a9790;--text3:#555;
+    --blue-bg:#1e2d40;--blue-border:#2563eb;--blue-text:#93c5fd;
+    --red-bg:#2d1515;--red-border:#dc2626;--red-text:#fca5a5;
+  }}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+  .app{max-width:480px;margin:0 auto;padding:14px}
+
+  /* Header */
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .header h1{font-size:17px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .theme-btn{background:none;border:1px solid var(--border2);border-radius:20px;padding:5px 11px;font-size:13px;color:var(--text2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+  /* Toggle bar */
+  .toggle-bar{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px}
+  .toggle{position:relative;width:42px;height:26px;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0;position:absolute}
+  .track{position:absolute;inset:0;background:var(--border2);border-radius:13px;cursor:pointer;transition:.2s}
+  .track:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  input:checked~.track{background:#3b82f6}
+  input:checked~.track:before{transform:translateX(16px)}
+  .toggle-label{font-size:14px;color:var(--text2)}
+
+  /* Preview */
+  .preview-wrap{position:relative;margin-bottom:10px}
+  #preview{
+    width:100%;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px;font-size:15px;line-height:2;
+    color:var(--text);font-family:inherit;resize:none;outline:none;
+    caret-color:var(--blue-text);overflow:hidden;
+  }
+  #preview:focus{border-color:var(--blue-border);box-shadow:0 0 0 3px var(--blue-bg)}
+  #field-label{
+    position:absolute;top:9px;right:9px;font-size:11px;color:var(--text3);
+    background:var(--surface);padding:2px 8px;border-radius:10px;border:1px solid var(--border);
+    pointer-events:none;
+  }
+
+  /* Cards (Mô tả + Xe) */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:10px}
+  .section-label{font-size:12px;color:var(--text3);font-weight:600;margin-bottom:8px}
+
+  /* Chips Mô tả */
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{padding:7px 13px;border:1px solid var(--border2);border-radius:20px;font-size:14px;cursor:pointer;background:var(--bg);color:var(--text2);transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none}
+  .chip.active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text);font-weight:500}
+
+  /* Xe chips */
+  .xe-chips{display:flex;gap:6px}
+  .xe-chip{flex:1;padding:9px 4px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;text-align:center;background:var(--bg);color:var(--text2);transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none}
+  .xe-chip.active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text);font-weight:500}
+  .xe-chip.disabled{opacity:.35;pointer-events:none}
+
+  /* Buttons */
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn{padding:13px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;border:1px solid;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;-webkit-tap-highlight-color:transparent}
+  .btn:active{transform:scale(.96)}
+  .btn-copy{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
+  .btn-clear{background:var(--red-bg);border-color:var(--red-border);color:var(--red-text)}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;white-space:nowrap;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none}
+  [data-theme='dark'] .toast{background:#fff;color:#111}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Phòng trọ</h1>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
+  </div>
+
+  <!-- Toggle Dự án mới — ngay trên preview -->
+  <div class="toggle-bar">
+    <label class="toggle">
+      <input type="checkbox" id="toggle-moi" onchange="onToggleMoi()">
+      <span class="track"></span>
+    </label>
+    <span class="toggle-label">Dự án mới</span>
+  </div>
+
+  <!-- Preview / editor -->
+  <div class="preview-wrap">
+    <textarea id="preview" rows="1"
+      spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
+    ></textarea>
+    <div id="field-label"></div>
+  </div>
+
+  <!-- Chips Mô tả — dưới preview -->
+  <div class="card">
+    <div class="section-label">Mô tả</div>
+    <div class="chips" id="mota-chips"></div>
+  </div>
+
+  <!-- Chips Giá xe — dưới Mô tả -->
+  <div class="card">
+    <div class="section-label">Giá xe</div>
+    <div class="xe-chips">
+      <div class="xe-chip" onclick="setXe('free xe',this)">Free xe</div>
+      <div class="xe-chip" onclick="setXe('free 1 xe',this)">Free 1 xe</div>
+      <div class="xe-chip" onclick="setXe('free 2 xe',this)">Free 2 xe</div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-copy" onclick="copyText()">Sao chép</button>
+    <button class="btn btn-clear" onclick="clearAll()">Xóa trắng</button>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+<script>
+// ── Cấu hình ──────────────────────────────────────────────
+const TPL_BODY = '📍{Địa chỉ}\n💰{Giá} - {Mô tả}\n⚡ Điện: {Giá điện}k/Kwh\n💧 Nước: {Giá nước}k/người\n💲 Dvu: {Phí dịch vụ}k/phòng\n🏍️ Xe: {Giá xe}k/xe';
+const MOTA_OPTS = ['1PN','2PN','Studio','Gác lửng','Ban công','Cửa sổ','Cửa sổ trời','Tách bếp','Máy giặt riêng','Thang máy'];
+// Thứ tự nhảy khi Enter — bỏ qua Mô tả (chip) và Giá xe (chip)
+const INPUT_FIELDS = ['Địa chỉ','Giá','Giá điện','Giá nước','Phí dịch vụ'];
+const ADDR_LOWER = new Set(['đường','quận','phường','hẻm','ngõ','xã','thị','tổ','và','số','tại']);
+
+// ── State ─────────────────────────────────────────────────
+// Nguồn sự thật duy nhất: values + xeMode + mota chips
+let values = {};
+INPUT_FIELDS.forEach(f => values[f] = '');
+let xeMode = null;
+// xeTyped = true khi người dùng tự gõ tay vào dòng xe
+let xeTyped = false;
+
+// ── Boot ──────────────────────────────────────────────────
+initTheme();
+renderMotaChips();
+renderPreview();
+setupEditor();
+
+// ── Template → text ───────────────────────────────────────
+function buildText(){
+  const showMoi = document.getElementById('toggle-moi').checked;
+  let body = TPL_BODY;
+  INPUT_FIELDS.forEach(f => {
+    body = body.split('{'+f+'}').join(values[f] || '{'+f+'}');
+  });
+  // Mô tả
+  const mota = getMotaVal();
+  body = body.split('{Mô tả}').join(mota || '{Mô tả}');
+  // Giá xe
+  if(xeMode){
+    body = body.replace(/\{Giá xe\}\S*/g, xeMode);
+  }
+  return (showMoi ? 'Dự án mới\n' : '') + body;
+}
+
+function renderPreview(keepCaret){
+  const ta = document.getElementById('preview');
+  const s0 = ta.selectionStart, s1 = ta.selectionEnd;
+  ta.value = buildText();
+  if(keepCaret){ ta.selectionStart = s0; ta.selectionEnd = s1; }
+  autoResize(ta);
+  updateFieldLabel();
+  updateXeChipState();
+}
+function autoResize(ta){
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+
+// ── Chips Mô tả ───────────────────────────────────────────
+function renderMotaChips(){
+  document.getElementById('mota-chips').innerHTML =
+    MOTA_OPTS.map(o=>`<span class="chip" onclick="toggleChip(this)">${o}</span>`).join('');
+}
+function toggleChip(el){
+  el.classList.toggle('active');
+  renderPreview();
+}
+function getMotaVal(){
+  return [...document.querySelectorAll('#mota-chips .chip.active')].map(c=>c.textContent).join(', ');
+}
+
+// ── Giá xe chips ─────────────────────────────────────────
+function setXe(mode, el){
+  if(xeTyped) return; // người dùng đã gõ tay → không cho chip
+  const same = xeMode === mode;
+  document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active'));
+  xeMode = same ? null : mode;
+  if(!same) el.classList.add('active');
+  renderPreview();
+}
+function updateXeChipState(){
+  document.querySelectorAll('.xe-chip').forEach(c=>{
+    c.classList.toggle('disabled', xeTyped && !c.classList.contains('active'));
+  });
+}
+
+// ── Editor thông minh ─────────────────────────────────────
+function setupEditor(){
+  const ta = document.getElementById('preview');
+
+  // Focus → nhảy vào {} đầu tiên
+  ta.addEventListener('focus', ()=> setTimeout(()=> jumpTo(ta, findFirstBrace(ta.value, 0)), 30));
+
+  ta.addEventListener('click', ()=> updateFieldLabel());
+
+  ta.addEventListener('keydown', e=>{
+    const ta = e.target;
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      // Tìm {} tiếp theo từ vị trí caret hiện tại
+      const next = findNextBrace(ta.value, ta.selectionEnd);
+      if(next) jumpTo(ta, next);
+      return;
+    }
+
+    // Chỉ cho phép gõ khi caret đang NẰM TRONG hoặc ngay trước một {}
+    // Nếu đang select toàn bộ {Field} thì thay thế
+    const sel = getSelectedPlaceholder(ta);
+    if(sel){
+      // Đang select placeholder — bắt đầu nhập giá trị mới
+      if(e.key.length === 1 && !e.ctrlKey && !e.metaKey){
+        e.preventDefault();
+        replaceSelected(ta, sel, e.key);
+      } else if(e.key === 'Backspace' || e.key === 'Delete'){
+        e.preventDefault();
+        // Xóa → để trống trường, giữ placeholder
+        values[sel.name] = '';
+        renderPreview();
+        // Đặt caret ở đầu placeholder mới
+        setTimeout(()=>{
+          const pos = findFirstBrace(ta.value, sel.start);
+          if(pos) jumpTo(ta, pos);
+        }, 10);
+      }
+      return;
+    }
+  });
+
+  ta.addEventListener('input', e=>{
+    // Trường hợp mobile: input event thay vì keydown
+    syncActiveField(ta);
+  });
+
+  ta.addEventListener('keyup', ()=> updateFieldLabel());
+  ta.addEventListener('selectionchange', ()=> updateFieldLabel());
+}
+
+// Tìm {} đầu tiên từ vị trí `from`, bỏ qua Mô tả và Giá xe nếu đã có
+function findFirstBrace(text, from){
+  return findNextBrace(text, from, true);
+}
+function findNextBrace(text, from, first=false){
+  let pos = from;
+  let looped = false;
+  while(true){
+    let idx = text.indexOf('{', pos);
+    if(idx === -1){
+      if(looped || first) return null;
+      idx = text.indexOf('{', 0); // quay đầu
+      looped = true;
+      if(idx === -1) return null;
+    }
+    const end = text.indexOf('}', idx);
+    if(end === -1){ pos = idx+1; continue; }
+    const name = text.substring(idx+1, end);
+    // Bỏ qua Mô tả (dùng chip)
+    if(name === 'Mô tả'){ pos = end+1; continue; }
+    // Bỏ qua Giá xe nếu đã chọn chip
+    if(name === 'Giá xe' && xeMode){ pos = end+1; continue; }
+    // Bỏ qua nếu đây là giá trị đã nhập (không phải placeholder gốc)
+    // Placeholder gốc = tên nằm trong INPUT_FIELDS hoặc 'Giá xe'
+    if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe'){ pos = end+1; continue; }
+    return { start: idx, end: end+1, name };
+  }
+}
+
+function jumpTo(ta, pos){
+  if(!pos) return;
+  ta.focus();
+  ta.selectionStart = pos.start;
+  ta.selectionEnd = pos.end;
+  updateFieldLabel();
+}
+
+// Kiểm tra xem toàn bộ selection có phải là một placeholder không
+function getSelectedPlaceholder(ta){
+  const s0 = ta.selectionStart, s1 = ta.selectionEnd;
+  if(s0 >= s1) return null;
+  const sel = ta.value.substring(s0, s1);
+  const m = sel.match(/^\{([^}]+)\}$/);
+  if(!m) return null;
+  const name = m[1];
+  if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe') return null;
+  return { start: s0, end: s1, name };
+}
+
+// Thay placeholder bằng ký tự đầu + đặt caret sau
+function replaceSelected(ta, sel, firstChar){
+  const fname = sel.name;
+  if(fname === 'Giá xe'){
+    xeTyped = true; xeMode = null;
+    document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active'));
+  }
+  if(fname === 'Địa chỉ') firstChar = firstChar.toUpperCase();
+  values[fname] = firstChar;
+  renderPreview();
+  // Đặt caret sau ký tự vừa gõ
+  const newText = ta.value;
+  // Tìm vị trí giá trị trong text (prefix trước placeholder giống nhau)
+  const tplLine = TPL_BODY.split('\n').find(l => l.includes('{'+fname+'}')) || '';
+  const pfx = tplLine.substring(0, tplLine.indexOf('{'+fname+'}'));
+  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
+  const lineIdx = TPL_BODY.split('\n').findIndex(l => l.includes('{'+fname+'}')) + offset;
+  const lines = newText.split('\n');
+  const lineStart = lines.slice(0, lineIdx).join('\n').length + (lineIdx > 0 ? 1 : 0);
+  const valStart = lineStart + pfx.length;
+  ta.selectionStart = ta.selectionEnd = valStart + firstChar.length;
+  updateFieldLabel();
+}
+
+// Sync khi gõ tiếp (sau ký tự đầu đã được replaceSelected xử lý)
+function syncActiveField(ta){
+  // Xác định dòng caret đang ở
+  const caretPos = ta.selectionStart;
+  const textBefore = ta.value.substring(0, caretPos);
+  const lineIdx = textBefore.split('\n').length - 1;
+  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
+  const tplIdx = lineIdx - offset;
+  const tplLines = TPL_BODY.split('\n');
+  if(tplIdx < 0 || tplIdx >= tplLines.length) return;
+  const tplLine = tplLines[tplIdx];
+  const m = tplLine.match(/\{([^}]+)\}/);
+  if(!m) return;
+  const fname = m[1];
+  if(!INPUT_FIELDS.includes(fname) && fname !== 'Giá xe') return;
+
+  // Đọc giá trị thực tế từ dòng hiện tại
+  const actualLines = ta.value.split('\n');
+  const actualLine = actualLines[lineIdx] || '';
+  const pIdx = tplLine.indexOf('{'+fname+'}');
+  const prefix = tplLine.substring(0, pIdx);
+  const suffix = tplLine.substring(pIdx + fname.length + 2);
+  let val = actualLine;
+  if(val.startsWith(prefix)) val = val.substring(prefix.length);
+  if(suffix && val.endsWith(suffix)) val = val.substring(0, val.length - suffix.length);
+  if(val === '{'+fname+'}') val = '';
+
+  if(fname === 'Giá xe'){
+    xeTyped = val !== '';
+    if(!xeTyped){ xeMode = null; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
+  }
+  if(fname === 'Địa chỉ' && val){
+    const capitalized = capitalizeAddr(val);
+    if(capitalized !== val){
+      const caret = ta.selectionStart;
+      values[fname] = capitalized;
+      renderPreview(false);
+      ta.selectionStart = ta.selectionEnd = caret;
+      updateXeChipState();
+      updateFieldLabel();
+      return;
+    }
+  }
+  values[fname] = val;
+  updateXeChipState();
+  updateFieldLabel();
+}
+
+// ── Capitalize địa chỉ ───────────────────────────────────
+function capitalizeAddr(str){
+  return str.split(' ').map((w,i)=>{
+    if(!w) return w;
+    if(ADDR_LOWER.has(w.toLowerCase()) && i > 0) return w.toLowerCase();
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).join(' ');
+}
+
+// ── Field label ───────────────────────────────────────────
+function updateFieldLabel(){
+  const ta = document.getElementById('preview');
+  const lbl = document.getElementById('field-label');
+  if(document.activeElement !== ta){ lbl.textContent = ''; return; }
+  const lineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
+  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
+  const tplIdx = lineIdx - offset;
+  const tplLines = TPL_BODY.split('\n');
+  if(tplIdx < 0 || tplIdx >= tplLines.length){ lbl.textContent = ''; return; }
+  const m = tplLines[tplIdx].match(/\{([^}]+)\}/);
+  lbl.textContent = m ? m[1] : '';
+}
+
+// ── Toggle Dự án mới ─────────────────────────────────────
+function onToggleMoi(){ renderPreview(); }
+
+// ── Copy & Clear ──────────────────────────────────────────
+function copyText(){
+  const text = document.getElementById('preview').value;
+  if(!text) return toast('Chưa có nội dung!');
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>toast('✅ Đã sao chép!')).catch(()=>fallbackCopy(text));
+  } else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.cssText='position:fixed;opacity:0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');toast('✅ Đã sao chép!');}catch{toast('Không sao chép được');}
+  document.body.removeChild(ta);
+}
+function clearAll(){
+  INPUT_FIELDS.forEach(f => values[f] = '');
+  xeMode = null; xeTyped = false;
+  document.querySelectorAll('#mota-chips .chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.xe-chip').forEach(c=>c.classList.remove('active','disabled'));
+  renderPreview();
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ── Theme ─────────────────────────────────────────────────
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('prt_theme',t);
+  const b=document.getElementById('theme-btn');
+  if(b) b.textContent=t==='dark'?'☀️ Light':'🌙 Dark';
+}
+function toggleTheme(){ applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
+function initTheme(){
+  const s=localStorage.getItem('prt_theme');
+  if(s){applyTheme(s);return;}
+  applyTheme(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+}
+</script>
+</body>
+</html>
