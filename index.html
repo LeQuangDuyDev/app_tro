@@ -411,7 +411,10 @@ function clearAll(){
   document.getElementById('suf-dv').textContent = 'k/phòng';
   document.getElementById('toggle-moi').checked = false;
   document.querySelector('.row-toggle').style.background = '';
-  requestAnimationFrame(() => document.getElementById('inp-diachi').focus());
+  const f = document.getElementById('inp-diachi');
+  f.focus();
+  // iOS fallback: nếu focus không bật bàn phím ngay
+  f.click();
 }
 
 // ── Toast ─────────────────────────────────────────────────
