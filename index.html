@@ -26,69 +26,88 @@
     --blue-bg:#1e2d40;--blue-border:#2563eb;--blue-text:#93c5fd;
     --red-bg:#2d1515;--red-border:#dc2626;--red-text:#fca5a5;
   }}
+
   body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
-  .app{max-width:480px;margin:0 auto;padding:14px}
+  .app{max-width:480px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:10px}
 
-  .toggle-bar{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px}
-  .toggle{position:relative;width:42px;height:26px;flex-shrink:0}
+  /* ── Editor card ── */
+  .editor-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+
+  /* Mỗi row */
+  .row{display:flex;align-items:center;border-bottom:1px solid var(--border);min-height:48px;position:relative}
+  .row:last-child{border-bottom:none}
+  .row.focused{background:var(--blue-bg)}
+
+  /* Label + input area */
+  .row-left{flex:1;display:flex;align-items:center;padding:8px 12px;min-width:0;gap:0}
+  .row-label{font-size:14px;color:var(--text2);white-space:nowrap;flex-shrink:0}
+  .row-suffix{font-size:14px;color:var(--text2);white-space:nowrap;flex-shrink:0}
+
+  /* Input */
+  .ri{border:none;outline:none;background:transparent;font-size:14px;color:var(--text);
+      font-family:inherit;padding:0;caret-color:var(--blue-text);}
+  .ri::placeholder{color:var(--text3)}
+  .ri-flex{flex:1;min-width:50px}   /* địa chỉ — chiếm hết */
+  .ri-num{width:64px}                /* ô số */
+  .ri-gia{width:90px}                /* giá rộng hơn chút */
+
+  /* Mini chips bên phải */
+  .row-chips{display:flex;gap:4px;padding:0 10px 0 4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+  .mc{padding:4px 10px;border:1px solid var(--border2);border-radius:12px;font-size:12px;
+      cursor:pointer;background:var(--bg);color:var(--text2);transition:all .15s;
+      -webkit-tap-highlight-color:transparent;user-select:none;white-space:nowrap}
+  .mc.on{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text);font-weight:600}
+  .mc.dim{opacity:.35;pointer-events:none}
+
+  /* Dòng mô tả — chips xuống dưới */
+  .mota-wrap{flex-direction:column;align-items:flex-start;padding:8px 12px 10px}
+  .mota-top{display:flex;align-items:center;width:100%;gap:4px;margin-bottom:6px}
+  .mota-chips{display:flex;flex-wrap:wrap;gap:4px}
+
+  /* Toggle "Dự án mới" — nằm trong card, dòng đầu */
+  .row-toggle{justify-content:space-between;padding:0 12px 0 12px;cursor:pointer}
+  .row-toggle-label{font-size:14px;color:var(--text2)}
+  .toggle{position:relative;width:38px;height:23px;flex-shrink:0}
   .toggle input{opacity:0;width:0;height:0;position:absolute}
-  .track{position:absolute;inset:0;background:var(--border2);border-radius:13px;cursor:pointer;transition:.2s}
-  .track:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .track{position:absolute;inset:0;background:var(--border2);border-radius:12px;cursor:pointer;transition:.2s}
+  .track:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:2.5px;
+    background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
   input:checked~.track{background:#3b82f6}
-  input:checked~.track:before{transform:translateX(16px)}
-  .toggle-label{font-size:14px;color:var(--text2)}
+  input:checked~.track:before{transform:translateX(14px)}
 
-  /* Preview wrapper — chứa textarea + nút nav dọc */
-  .preview-wrap{position:relative;margin-bottom:10px;display:flex;gap:6px;align-items:flex-start}
-  #preview{
-    flex:1;background:var(--surface);border:1px solid var(--border);
-    border-radius:var(--radius);padding:14px;font-size:15px;line-height:2;
-    color:var(--text);font-family:inherit;resize:none;outline:none;
-    caret-color:var(--blue-text);overflow:hidden;
-  }
-  #preview:focus{border-color:var(--blue-border);box-shadow:0 0 0 3px var(--blue-bg)}
-
-  /* Cột nút điều hướng */
-  .nav-col{display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0;align-self:stretch}
-  .nav-btn{
-    width:36px;height:36px;border:1px solid var(--border2);border-radius:var(--radius-sm);
-    background:var(--surface);color:var(--text2);font-size:16px;cursor:pointer;
+  /* Cột nút bên phải card: Xóa trắng / Sao chép / ▲ */
+  .card-wrap{position:relative;margin-right:46px}
+  .side-col{position:absolute;right:-46px;top:0;bottom:0;width:36px;display:flex;flex-direction:column;gap:6px;padding:6px 0}
+  .side-btn{
+    flex:1;border:1px solid var(--border2);border-radius:var(--radius-sm);
+    background:var(--surface);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
     -webkit-tap-highlight-color:transparent;transition:all .15s;user-select:none;
+    writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:1px;
   }
-  .nav-btn:active{transform:scale(.92);background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
+  .side-btn:active{transform:scale(.93)}
+  .side-btn.s-clear{background:var(--red-bg);border-color:var(--red-border);color:var(--red-text)}
+  .side-btn.s-copy{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
+  .side-btn.s-nav{font-size:15px;writing-mode:horizontal-tb}
+  .side-btn.s-nav:active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
 
-  #field-label{
-    position:absolute;top:9px;right:52px;font-size:11px;color:var(--text3);
-    background:var(--surface);padding:2px 8px;border-radius:10px;border:1px solid var(--border);
-    pointer-events:none;
-  }
-
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:10px}
-  .chips{display:flex;flex-wrap:wrap;gap:6px}
-  .chip{padding:7px 13px;border:1px solid var(--border2);border-radius:20px;font-size:14px;cursor:pointer;background:var(--bg);color:var(--text2);transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none}
-  .chip.active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text);font-weight:500}
-
-  .xe-chips{display:flex;gap:6px}
-  .xe-chip{flex:1;padding:9px 4px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;text-align:center;background:var(--bg);color:var(--text2);transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none}
-  .xe-chip.active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text);font-weight:500}
-  .xe-chip.disabled{opacity:.35;pointer-events:none}
-
+  /* Buttons */
   .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .btn{padding:13px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;border:1px solid;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;-webkit-tap-highlight-color:transparent}
+  .btn{padding:13px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;
+       border:1px solid;display:flex;align-items:center;justify-content:center;gap:6px;
+       transition:all .15s;-webkit-tap-highlight-color:transparent}
   .btn:active{transform:scale(.96)}
   .btn-copy{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
   .btn-clear{background:var(--red-bg);border-color:var(--red-border);color:var(--red-text)}
-
-  .theme-btn{
-    background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  .theme-btn{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);
     padding:13px;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;
     -webkit-tap-highlight-color:transparent;display:flex;align-items:center;
-    justify-content:center;gap:8px;width:100%;transition:all .15s;
-  }
+    justify-content:center;gap:8px;width:100%;transition:all .15s}
   .theme-btn:active{transform:scale(.96)}
 
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;white-space:nowrap;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;
+    white-space:nowrap;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none}
   [data-theme='dark'] .toast{background:#fff;color:#111}
   .toast.show{opacity:1}
 </style>
@@ -96,424 +115,337 @@
 <body>
 <div class="app">
 
-  <div class="toggle-bar">
-    <label class="toggle">
-      <input type="checkbox" id="toggle-moi" onchange="onToggleMoi()">
-      <span class="track"></span>
-    </label>
-    <span class="toggle-label">Dự án mới</span>
-  </div>
+  <div class="card-wrap">
+    <div class="editor-card" id="editor-card">
 
-  <div class="preview-wrap">
-    <textarea id="preview" rows="1"
-      spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
-    ></textarea>
-    <div id="field-label"></div>
-    <!-- Nút điều hướng lên -->
-    <div class="nav-col">
-      <button class="nav-btn" id="nav-up" onclick="navField(-1)" title="Trường trước">▲</button>
+      <!-- Toggle Dự án mới -->
+      <div class="row row-toggle" onclick="toggleMoi()">
+        <span class="row-toggle-label">Dự án mới</span>
+        <label class="toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-moi" onchange="onToggleMoi()">
+          <span class="track"></span>
+        </label>
+      </div>
+
+      <!-- Địa chỉ -->
+      <div class="row" id="row-diachi">
+        <div class="row-left">
+          <span class="row-label">📍&nbsp;</span>
+          <input class="ri ri-flex" id="inp-diachi" placeholder="Địa chỉ"
+            spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">
+        </div>
+      </div>
+
+      <!-- Giá + Mô tả -->
+      <div class="row mota-wrap" id="row-gia">
+        <div class="mota-top">
+          <span class="row-label">💰 Giá:&nbsp;</span>
+          <input class="ri ri-gia" id="inp-gia" placeholder="Giá"
+            spellcheck="false" autocomplete="off">
+          <span class="row-suffix">&nbsp;–&nbsp;</span>
+          <span id="mota-preview" style="font-size:14px;color:var(--text3);font-style:italic;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{Mô tả}</span>
+        </div>
+        <div class="mota-chips" id="mota-chips"></div>
+      </div>
+
+      <!-- Điện -->
+      <div class="row" id="row-dien">
+        <div class="row-left">
+          <span class="row-label">⚡ Điện:&nbsp;</span>
+          <input class="ri ri-num" id="inp-dien" placeholder="Giá"
+            spellcheck="false" autocomplete="off">
+          <span class="row-suffix">k/Kwh</span>
+        </div>
+      </div>
+
+      <!-- Nước -->
+      <div class="row" id="row-nuoc">
+        <div class="row-left">
+          <span class="row-label">💧 Nước:&nbsp;</span>
+          <input class="ri ri-num" id="inp-nuoc" placeholder="Giá"
+            spellcheck="false" autocomplete="off">
+          <span class="row-suffix" id="suf-nuoc">k/người</span>
+        </div>
+        <div class="row-chips">
+          <span class="mc on" id="nuoc-nguoi" onclick="setUnit('nuoc','người',this)">người</span>
+          <span class="mc"    id="nuoc-m3"    onclick="setUnit('nuoc','m3',this)">m³</span>
+        </div>
+      </div>
+
+      <!-- Dịch vụ -->
+      <div class="row" id="row-dv">
+        <div class="row-left">
+          <span class="row-label">💲 Dịch vụ:&nbsp;</span>
+          <input class="ri ri-num" id="inp-dv" placeholder="Giá"
+            spellcheck="false" autocomplete="off">
+          <span class="row-suffix" id="suf-dv">k/phòng</span>
+        </div>
+        <div class="row-chips">
+          <span class="mc on" id="dv-phong" onclick="setUnit('dv','phòng',this)">phòng</span>
+          <span class="mc"    id="dv-nguoi" onclick="setUnit('dv','người',this)">người</span>
+        </div>
+      </div>
+
+      <!-- Xe -->
+      <div class="row" id="row-xe">
+        <div class="row-left">
+          <span class="row-label">🏍️ Xe:&nbsp;</span>
+          <input class="ri ri-num" id="inp-xe" placeholder="Giá"
+            spellcheck="false" autocomplete="off">
+          <span class="row-suffix" id="suf-xe">k/xe</span>
+        </div>
+        <div class="row-chips">
+          <span class="mc" id="xe-0" onclick="setXe('free xe',this)">free</span>
+          <span class="mc" id="xe-1" onclick="setXe('free 1 xe',this)">free 1</span>
+          <span class="mc" id="xe-2" onclick="setXe('free 2 xe',this)">free 2</span>
+        </div>
+      </div>
+
+    </div><!-- /editor-card -->
+
+    <!-- Cột nút bên phải -->
+    <div class="side-col">
+      <button class="side-btn s-clear" onclick="clearAll()">Xóa trắng</button>
+      <button class="side-btn s-copy"  onclick="copyText()">Sao chép</button>
+      <button class="side-btn s-nav"   onclick="navPrev()">▲</button>
     </div>
-  </div>
+  </div><!-- /card-wrap -->
+  <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
 
-  <div class="card">
-    <div class="chips" id="mota-chips"></div>
-  </div>
-
-  <div class="card">
-    <div class="xe-chips">
-      <div class="xe-chip" onclick="setXe('free xe',this)">Free xe</div>
-      <div class="xe-chip" onclick="setXe('free 1 xe',this)">Free 1 xe</div>
-      <div class="xe-chip" onclick="setXe('free 2 xe',this)">Free 2 xe</div>
-    </div>
-  </div>
-
-  <div class="btn-row">
-    <button class="btn btn-copy" onclick="copyText()">Sao chép</button>
-    <button class="btn btn-clear" onclick="clearAll()">Xóa trắng</button>
-  </div>
-  <div style="margin-top:8px;">
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
-  </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Cấu hình ──────────────────────────────────────────────
-const TPL_BODY = '📍{Địa chỉ}\n💰 Giá: {Giá} - {Mô tả}\n⚡ Điện: {Giá điện}k/Kwh\n💧 Nước: {Giá nước}k/người\n💲 Dịch vụ: {Phí dịch vụ}k/phòng\n🏍️ Xe: {Giá xe}k/xe';
+// ── Config ────────────────────────────────────────────────
 const MOTA_OPTS = ['1PN','2PN','1PK','Studio','Gác','Ban công','Cửa sổ','Cửa sổ trời','Tách bếp','Máy giặt riêng','Thang máy'];
-const INPUT_FIELDS = ['Địa chỉ','Giá','Giá điện','Giá nước','Phí dịch vụ'];
 const ADDR_LOWER = new Set(['đường','quận','phường','hẻm','ngõ','xã','thị','tổ','và','số','tại']);
 
+// Thứ tự điều hướng Enter / ▲ (bỏ qua toggle và mota)
+const NAV_IDS = ['inp-diachi','inp-gia','inp-dien','inp-nuoc','inp-dv','inp-xe'];
+
 // ── State ─────────────────────────────────────────────────
-let values = {};
-INPUT_FIELDS.forEach(f => values[f] = '');
-let xeMode = null;
-let xeTyped = false;
-let xeValue = '';
+let nuocUnit = 'người';
+let dvUnit   = 'phòng';
+let xeMode   = null;
 
 // ── Boot ──────────────────────────────────────────────────
 initTheme();
 renderMotaChips();
-renderPreview();
-setupEditor();
+// Focus ô đầu tiên sau khi trang load — dùng rAF tránh iOS IME
+requestAnimationFrame(() => document.getElementById('inp-diachi').focus());
 
-// ── Template → text ───────────────────────────────────────
-function buildText(){
-  const showMoi = document.getElementById('toggle-moi').checked;
-  let body = TPL_BODY;
-  INPUT_FIELDS.forEach(f => {
-    body = body.split('{'+f+'}').join(values[f] || '{'+f+'}');
-  });
-  const mota = getMotaVal();
-  body = body.split('{Mô tả}').join(mota || '{Mô tả}');
-  if(xeMode){
-    body = body.replace(/\{Giá xe\}\S*/g, xeMode);
-  } else if(xeTyped && xeValue){
-    body = body.split('{Giá xe}').join(xeValue);
+// ── Highlight row đang active ─────────────────────────────
+function setFocusedRow(inp){
+  document.querySelectorAll('.row').forEach(r => r.classList.remove('focused'));
+  if(inp){
+    const row = inp.closest('.row');
+    if(row) row.classList.add('focused');
   }
-  return (showMoi ? 'Dự án mới\n' : '') + body;
 }
-
-function renderPreview(keepCaret){
-  const ta = document.getElementById('preview');
-  const s0 = ta.selectionStart, s1 = ta.selectionEnd;
-  ta.value = buildText();
-  if(keepCaret){ ta.selectionStart = s0; ta.selectionEnd = s1; }
-  autoResize(ta);
-  updateFieldLabel();
-  updateXeChipState();
-}
-function autoResize(ta){
-  ta.style.height = 'auto';
-  ta.style.height = ta.scrollHeight + 'px';
-}
-
-// ── Chips Mô tả ───────────────────────────────────────────
-function renderMotaChips(){
-  document.getElementById('mota-chips').innerHTML =
-    MOTA_OPTS.map(o=>`<span class="chip" onclick="toggleChip(this)">${o}</span>`).join('');
-}
-function toggleChip(el){
-  el.classList.toggle('active');
-  renderPreview();
-}
-function getMotaVal(){
-  return [...document.querySelectorAll('#mota-chips .chip.active')].map(c=>c.textContent).join(', ');
-}
-
-// ── Giá xe chips ─────────────────────────────────────────
-function setXe(mode, el){
-  if(xeTyped) return;
-  const same = xeMode === mode;
-  document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active'));
-  xeMode = same ? null : mode;
-  if(!same) el.classList.add('active');
-  renderPreview();
-}
-function updateXeChipState(){
-  document.querySelectorAll('.xe-chip').forEach(c=>{
-    c.classList.toggle('disabled', xeTyped && !c.classList.contains('active'));
-  });
-}
-
-// ── Điều hướng lên trường trước ──────────────────────────
-let lastKnownLineIdx = 0;
-
-function navField(dir){
-  const ta = document.getElementById('preview');
-  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
-  const tplLines = TPL_BODY.split('\n');
-
-  // Danh sách các dòng có trường nhập (theo thứ tự)
-  const fields = [];
-  tplLines.forEach((tl, ti) => {
-    const m = tl.match(/\{([^}]+)\}/);
-    if(!m) return;
-    const name = m[1];
-    if(name === 'Mô tả') return;
-    if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe') return;
-    fields.push({ tplIdx: ti, lineIdx: ti + offset, name,
-      prefix: tl.substring(0, tl.indexOf(m[0])),
-      suffix: tl.substring(tl.indexOf(m[0]) + m[0].length) });
-  });
-
-  // Tìm trường hiện tại theo lastKnownLineIdx
-  let idx = fields.findIndex(f => f.lineIdx === lastKnownLineIdx);
-  if(idx === -1) idx = 1; // fallback: nếu không biết thì coi như đang ở trường 2
-  idx = idx + dir;
-  if(idx < 0) idx = 0;
-  if(idx >= fields.length) idx = fields.length - 1;
-
-  const f = fields[idx];
-
-  // Xoá giá trị trường đó → trả về placeholder
-  if(f.name === 'Giá xe'){ xeTyped = false; xeValue = ''; xeMode = null; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
-  else values[f.name] = '';
-
-  renderPreview();
-  lastKnownLineIdx = f.lineIdx;
-
-  // Select placeholder trong textarea
-  const lines = ta.value.split('\n');
-  const lineStart = lines.slice(0, f.lineIdx).join('\n').length + (f.lineIdx > 0 ? 1 : 0);
-  const line = lines[f.lineIdx] || '';
-  const ph = line.match(/\{([^}]+)\}/);
-  if(ph){
-    const s = lineStart + line.indexOf(ph[0]);
-    ta.focus(); ta.selectionStart = s; ta.selectionEnd = s + ph[0].length;
-  } else {
-    const s = lineStart + f.prefix.length;
-    ta.focus(); ta.selectionStart = s; ta.selectionEnd = lineStart + line.length - f.suffix.length;
-  }
-  updateFieldLabel();
-}
-
-// ── Editor ────────────────────────────────────────────────
-function setupEditor(){
-  const ta = document.getElementById('preview');
-  let composing = false;
-
-  ta.addEventListener('focus', ()=>{
-    lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
-    setTimeout(()=> jumpToFirstEmpty(ta), 30);
-  });
-
-  ta.addEventListener('compositionstart', ()=>{ composing = true; });
-  ta.addEventListener('compositionend', ()=>{
-    composing = false;
-    readCurrentLine(ta); // commit sau khi compose xong
-  });
-
-  ta.addEventListener('keydown', e=>{
-    if(composing) return;
-    if(e.key === 'Enter'){
-      e.preventDefault();
-      // Commit dòng hiện tại trước khi nav
-      readCurrentLine(ta);
-      navField(1); // xuống trường tiếp
-      return;
-    }
-    const sel = getSelectedPlaceholder(ta);
-    if(sel && (e.key === 'Backspace' || e.key === 'Delete')){
-      e.preventDefault();
-      clearField(sel.name);
-    }
-  });
-
-  ta.addEventListener('input', ()=>{
-    if(composing) return; // đang compose tiếng Việt → không đụng vào
-    readCurrentLine(ta);
-  });
-
-  ta.addEventListener('blur', ()=>{
-    readCurrentLine(ta);
-    // Rebuild sau 1 tick để tránh trường hợp blur→focus ngay (bấm nút ▲)
+// Gắn focus/blur cho tất cả input
+NAV_IDS.forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('focus', () => setFocusedRow(el));
+  el.addEventListener('blur',  () => {
+    // Giữ highlight nếu focus chuyển sang input khác trong card
     setTimeout(()=>{
-      if(document.activeElement !== ta) renderPreview();
+      const active = document.activeElement;
+      if(!active || !active.classList.contains('ri')) setFocusedRow(null);
     }, 50);
   });
+});
 
-  ta.addEventListener('click', ()=>{
-    lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
-    updateFieldLabel();
+// ── Enter → ô tiếp theo ───────────────────────────────────
+NAV_IDS.forEach((id, i) => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if(e.key !== 'Enter') return;
+    e.preventDefault();
+    const next = NAV_IDS[i + 1];
+    if(next) document.getElementById(next).focus();
   });
-  ta.addEventListener('keyup', ()=>{
-    if(!composing) lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
-    updateFieldLabel();
-  });
-  ta.addEventListener('selectionchange', ()=>{ updateFieldLabel(); });
+});
+
+// ── Nút ▲ → ô trước ──────────────────────────────────────
+function navPrev(){
+  const active = document.activeElement;
+  const idx = NAV_IDS.indexOf(active && active.id);
+  if(idx > 0) document.getElementById(NAV_IDS[idx - 1]).focus();
+  else if(idx === -1 && NAV_IDS.length) document.getElementById(NAV_IDS[0]).focus();
 }
 
-// Đọc giá trị từ dòng caret hiện tại và lưu vào state — KHÔNG ghi đè ta.value
-function readCurrentLine(ta){
-  const text = ta.value;
-  const caret = ta.selectionStart;
-  const lineIdx = text.substring(0, caret).split('\n').length - 1;
-  lastKnownLineIdx = lineIdx;
+// ── Mô tả chips ───────────────────────────────────────────
+function renderMotaChips(){
+  document.getElementById('mota-chips').innerHTML =
+    MOTA_OPTS.map(o => `<span class="mc" onclick="toggleMota(this)">${o}</span>`).join('');
+}
+function toggleMota(el){
+  el.classList.toggle('on');
+  updateMotaPreview();
+}
+function getMotaVal(){
+  return [...document.querySelectorAll('#mota-chips .mc.on')].map(c => c.textContent).join(', ');
+}
+function updateMotaPreview(){
+  const v = getMotaVal();
+  const el = document.getElementById('mota-preview');
+  el.textContent = v || '{Mô tả}';
+  el.style.color = v ? 'var(--text)' : 'var(--text3)';
+  el.style.fontStyle = v ? 'normal' : 'italic';
+}
 
-  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
-  const tplIdx = lineIdx - offset;
-  const tplLines = TPL_BODY.split('\n');
-  if(tplIdx < 0 || tplIdx >= tplLines.length) return;
+// ── Đơn vị nước / dịch vụ ────────────────────────────────
+function setUnit(type, val, el){
+  const isNuoc = type === 'nuoc';
+  if(isNuoc){ nuocUnit = val; document.getElementById('suf-nuoc').textContent = 'k/' + val; }
+  else      { dvUnit   = val; document.getElementById('suf-dv').textContent   = 'k/' + val; }
+  const prefix = isNuoc ? 'nuoc' : 'dv';
+  document.querySelectorAll('[id^="' + prefix + '-"]').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
 
-  const tplLine = tplLines[tplIdx];
-  const m = tplLine.match(/\{([^}]+)\}/);
-  if(!m || m[1] === 'Mô tả') return;
-  const fname = m[1];
-  if(!INPUT_FIELDS.includes(fname) && fname !== 'Giá xe') return;
-
-  const lines = text.split('\n');
-  const line = lines[lineIdx] || '';
-  const pIdx = tplLine.indexOf('{'+fname+'}');
-  const prefix = tplLine.substring(0, pIdx);
-  const suffix = tplLine.substring(pIdx + fname.length + 2);
-
-  let val = line;
-  if(val.startsWith(prefix)) val = val.substring(prefix.length);
-  if(suffix && val.endsWith(suffix)) val = val.substring(0, val.length - suffix.length);
-  if(val === '{'+fname+'}') val = '';
-
-  if(fname === 'Giá xe'){
-    if(val){ xeTyped = true; xeMode = null; xeValue = val; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
-    else { xeTyped = false; xeValue = ''; }
-  } else {
-    // Capitalize địa chỉ sau compose — không rebuild ngay
-    if(fname === 'Địa chỉ' && val) val = capitalizeAddr(val);
-    values[fname] = val;
+// ── Xe chips ─────────────────────────────────────────────
+function setXe(mode, el){
+  const inp = document.getElementById('inp-xe');
+  const suf = document.getElementById('suf-xe');
+  if(xeMode === mode){                              // toggle off
+    xeMode = null;
+    document.querySelectorAll('[id^="xe-"]').forEach(c => c.classList.remove('on','dim'));
+    inp.disabled = false; inp.value = ''; suf.textContent = 'k/xe';
+    inp.focus();
+    return;
   }
-  updateXeChipState();
-  autoResize(ta);
+  xeMode = mode;
+  document.querySelectorAll('[id^="xe-"]').forEach(c => c.classList.remove('on','dim'));
+  el.classList.add('on');
+  inp.value = ''; inp.disabled = true;
+  suf.textContent = mode;
 }
-
-function getNavigableLineIndices(){
-  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
-  const tplLines = TPL_BODY.split('\n');
-  const result = [];
-  tplLines.forEach((tl, ti) => {
-    const m = tl.match(/\{([^}]+)\}/);
-    if(!m) return;
-    const name = m[1];
-    if(name === 'Mô tả') return;
-    if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe') return;
-    result.push({ lineIdx: ti + offset, name });
-  });
-  return result;
-}
-
-function jumpToFirstEmpty(ta){
-  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
-  const tplLines = TPL_BODY.split('\n');
-  for(let ti = 0; ti < tplLines.length; ti++){
-    const m = tplLines[ti].match(/\{([^}]+)\}/);
-    if(!m) continue;
-    const name = m[1];
-    if(name === 'Mô tả') continue;
-    if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe') continue;
-    const val = name === 'Giá xe' ? xeValue : values[name];
-    if(!val){
-      selectFieldLine(ta, ti + offset);
-      return;
-    }
+// Gõ tay vào ô xe → bỏ chip free
+document.getElementById('inp-xe').addEventListener('input', () => {
+  if(document.getElementById('inp-xe').value && xeMode){
+    xeMode = null;
+    document.querySelectorAll('[id^="xe-"]').forEach(c => c.classList.remove('on','dim'));
+    document.getElementById('suf-xe').textContent = 'k/xe';
   }
-  // Tất cả đã nhập → nhảy về trường đầu
-  selectFieldLine(ta, offset);
-}
-
-// Nhảy caret vào 1 dòng (tplLineIdx là index trong text thực)
-function selectFieldLine(ta, lineIdx){
-  lastKnownLineIdx = lineIdx;
-  renderPreview();
-  const lines = ta.value.split('\n');
-  const line = lines[lineIdx] || '';
-  const lineStart = lines.slice(0, lineIdx).join('\n').length + (lineIdx > 0 ? 1 : 0);
-  const ph = line.match(/\{([^}]+)\}/);
-  if(ph){
-    const s = lineStart + line.indexOf(ph[0]);
-    ta.focus(); ta.selectionStart = s; ta.selectionEnd = s + ph[0].length;
-  } else {
-    // Đã có giá trị: select toàn bộ
-    const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
-    const tplLine = TPL_BODY.split('\n')[lineIdx - offset] || '';
-    const mTpl = tplLine.match(/\{([^}]+)\}/);
-    const prefix = mTpl ? tplLine.substring(0, tplLine.indexOf(mTpl[0])) : '';
-    const suffix = mTpl ? tplLine.substring(tplLine.indexOf(mTpl[0]) + mTpl[0].length) : '';
-    const s = lineStart + prefix.length;
-    const e = lineStart + line.length - suffix.length;
-    ta.focus(); ta.selectionStart = s; ta.selectionEnd = e;
-  }
-  updateFieldLabel();
-}
-
-function clearField(name){
-  if(name === 'Giá xe'){ xeTyped = false; xeValue = ''; xeMode = null; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
-  else values[name] = '';
-  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
-  const ti = TPL_BODY.split('\n').findIndex(l => l.includes('{'+name+'}'));
-  if(ti !== -1){
-    const ta = document.getElementById('preview');
-    setTimeout(()=> selectFieldLine(ta, ti + offset), 10);
-  } else renderPreview();
-}
-
-function getSelectedPlaceholder(ta){
-  const s0 = ta.selectionStart, s1 = ta.selectionEnd;
-  if(s0 >= s1) return null;
-  const sel = ta.value.substring(s0, s1);
-  const m = sel.match(/^\{([^}]+)\}$/);
-  if(!m) return null;
-  const name = m[1];
-  if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe') return null;
-  return { start: s0, end: s1, name };
-}
+});
 
 // ── Capitalize địa chỉ ───────────────────────────────────
 function capitalizeAddr(str){
-  return str.split(' ').map((w,i)=>{
+  return str.split(' ').map((w, i) => {
     if(!w) return w;
     if(ADDR_LOWER.has(w.toLowerCase()) && i > 0) return w.toLowerCase();
     return w.charAt(0).toUpperCase() + w.slice(1);
   }).join(' ');
 }
-
-// ── Field label ───────────────────────────────────────────
-function updateFieldLabel(){
-  const ta = document.getElementById('preview');
-  const lbl = document.getElementById('field-label');
-  if(document.activeElement !== ta){ lbl.textContent = ''; return; }
-  const lineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
-  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
-  const tplIdx = lineIdx - offset;
-  const tplLines = TPL_BODY.split('\n');
-  if(tplIdx < 0 || tplIdx >= tplLines.length){ lbl.textContent = ''; return; }
-  const m = tplLines[tplIdx].match(/\{([^}]+)\}/);
-  lbl.textContent = m ? m[1] : '';
-}
+document.getElementById('inp-diachi').addEventListener('blur', function(){
+  if(this.value) this.value = capitalizeAddr(this.value);
+});
 
 // ── Toggle Dự án mới ─────────────────────────────────────
-function onToggleMoi(){ renderPreview(); }
+function toggleMoi(){
+  const cb = document.getElementById('toggle-moi');
+  cb.checked = !cb.checked;
+  onToggleMoi();
+}
+function onToggleMoi(){
+  // Chỉ thay đổi style visual (dòng toggle luôn hiện, không cần ẩn gì)
+  const on = document.getElementById('toggle-moi').checked;
+  document.querySelector('.row-toggle').style.background = on ? 'var(--blue-bg)' : '';
+}
 
-// ── Copy & Clear ──────────────────────────────────────────
+// ── Build text output ─────────────────────────────────────
+function buildText(){
+  const showMoi = document.getElementById('toggle-moi').checked;
+  const diachi  = document.getElementById('inp-diachi').value.trim();
+  const gia     = document.getElementById('inp-gia').value.trim();
+  const dien    = document.getElementById('inp-dien').value.trim();
+  const nuoc    = document.getElementById('inp-nuoc').value.trim();
+  const dv      = document.getElementById('inp-dv').value.trim();
+  const xeVal   = document.getElementById('inp-xe').value.trim();
+  const mota    = getMotaVal();
+  const xeLine  = xeMode ? xeMode : (xeVal ? xeVal + 'k/xe' : '{Giá xe}k/xe');
+
+  const lines = [
+    '📍'  + (diachi || '{Địa chỉ}'),
+    '💰 Giá: ' + (gia || '{Giá}') + ' - ' + (mota || '{Mô tả}'),
+    '⚡ Điện: ' + (dien || '{Giá điện}') + 'k/Kwh',
+    '💧 Nước: ' + (nuoc || '{Giá nước}') + 'k/' + nuocUnit,
+    '💲 Dịch vụ: ' + (dv || '{Phí dịch vụ}') + 'k/' + dvUnit,
+    '🏍️ Xe: ' + xeLine,
+  ];
+  if(showMoi) lines.unshift('Dự án mới');
+  return lines.join('\n');
+}
+
+// ── Sao chép ─────────────────────────────────────────────
 function copyText(){
-  const text = document.getElementById('preview').value;
-  if(!text) return toast('Chưa có nội dung!');
+  const text = buildText();
   if(navigator.clipboard){
-    navigator.clipboard.writeText(text).then(()=>toast('✅ Đã sao chép!')).catch(()=>fallbackCopy(text));
+    navigator.clipboard.writeText(text)
+      .then(() => toast('✅ Đã sao chép!'))
+      .catch(() => fallbackCopy(text));
   } else fallbackCopy(text);
 }
 function fallbackCopy(text){
-  const ta=document.createElement('textarea');
-  ta.value=text;ta.style.cssText='position:fixed;opacity:0';
-  document.body.appendChild(ta);ta.focus();ta.select();
-  try{document.execCommand('copy');toast('✅ Đã sao chép!');}catch{toast('Không sao chép được');}
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); toast('✅ Đã sao chép!'); }
+  catch{ toast('Không sao chép được'); }
   document.body.removeChild(ta);
 }
+
+// ── Xóa trắng ────────────────────────────────────────────
 function clearAll(){
-  INPUT_FIELDS.forEach(f => values[f] = '');
-  xeMode = null; xeTyped = false; xeValue = '';
-  document.querySelectorAll('#mota-chips .chip').forEach(c=>c.classList.remove('active'));
-  document.querySelectorAll('.xe-chip').forEach(c=>c.classList.remove('active','disabled'));
-  renderPreview();
+  NAV_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    el.value = ''; el.disabled = false;
+  });
+  // Xe
+  xeMode = null;
+  document.querySelectorAll('[id^="xe-"]').forEach(c => c.classList.remove('on','dim'));
+  document.getElementById('suf-xe').textContent = 'k/xe';
+  // Mô tả
+  document.querySelectorAll('#mota-chips .mc').forEach(c => c.classList.remove('on'));
+  updateMotaPreview();
+  // Đơn vị nước
+  nuocUnit = 'người';
+  document.getElementById('nuoc-nguoi').classList.add('on');
+  document.getElementById('nuoc-m3').classList.remove('on');
+  document.getElementById('suf-nuoc').textContent = 'k/người';
+  // Đơn vị dịch vụ
+  dvUnit = 'phòng';
+  document.getElementById('dv-phong').classList.add('on');
+  document.getElementById('dv-nguoi').classList.remove('on');
+  document.getElementById('suf-dv').textContent = 'k/phòng';
+  // Toggle mới
+  document.getElementById('toggle-moi').checked = false;
+  document.querySelector('.row-toggle').style.background = '';
+  // Focus về địa chỉ
+  requestAnimationFrame(() => document.getElementById('inp-diachi').focus());
 }
 
 // ── Toast ─────────────────────────────────────────────────
 function toast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2000);
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
 }
 
 // ── Theme ─────────────────────────────────────────────────
 function applyTheme(t){
-  document.documentElement.setAttribute('data-theme',t);
-  localStorage.setItem('prt_theme',t);
-  const b=document.getElementById('theme-btn');
-  if(b) b.textContent=t==='dark'?'☀️ Light':'🌙 Dark';
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('prt_theme', t);
+  const b = document.getElementById('theme-btn');
+  if(b) b.textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
 }
-function toggleTheme(){ applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
+function toggleTheme(){
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
 function initTheme(){
-  const s=localStorage.getItem('prt_theme');
-  if(s){applyTheme(s);return;}
-  applyTheme(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  const s = localStorage.getItem('prt_theme');
+  if(s){ applyTheme(s); return; }
+  applyTheme(window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
 }
 </script>
 </body>
