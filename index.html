@@ -216,76 +216,55 @@ function updateXeChipState(){
   });
 }
 
-// ── Điều hướng lên / xuống giữa các trường ───────────────
-// Danh sách các template-line index có trường nhập được (không tính Mô tả)
-function getNavigableLineIndices(){
+// ── Điều hướng lên trường trước ──────────────────────────
+let lastKnownLineIdx = 0;
+
+function navField(dir){
+  const ta = document.getElementById('preview');
   const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
   const tplLines = TPL_BODY.split('\n');
-  const result = [];
+
+  // Danh sách các dòng có trường nhập (theo thứ tự)
+  const fields = [];
   tplLines.forEach((tl, ti) => {
     const m = tl.match(/\{([^}]+)\}/);
     if(!m) return;
     const name = m[1];
-    if(name === 'Mô tả') return; // chip
-    if(name === 'Giá xe' && xeMode) return; // đã chọn chip xe
+    if(name === 'Mô tả') return;
     if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe') return;
-    result.push({ lineIdx: ti + offset, name });
+    fields.push({ tplIdx: ti, lineIdx: ti + offset, name,
+      prefix: tl.substring(0, tl.indexOf(m[0])),
+      suffix: tl.substring(tl.indexOf(m[0]) + m[0].length) });
   });
-  return result;
-}
 
-// Lấy index dòng hiện tại của caret
-function caretLineIdx(ta){
-  return ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
-}
+  // Tìm trường hiện tại theo lastKnownLineIdx
+  let idx = fields.findIndex(f => f.lineIdx === lastKnownLineIdx);
+  if(idx === -1) idx = 1; // fallback: nếu không biết thì coi như đang ở trường 2
+  idx = idx + dir;
+  if(idx < 0) idx = 0;
+  if(idx >= fields.length) idx = fields.length - 1;
 
-// Lấy vị trí caret để nhảy vào 1 dòng: cuối phần giá trị (hoặc select placeholder)
-function getLineJumpPos(ta, lineIdx){
+  const f = fields[idx];
+
+  // Xoá giá trị trường đó → trả về placeholder
+  if(f.name === 'Giá xe'){ xeTyped = false; xeValue = ''; xeMode = null; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
+  else values[f.name] = '';
+
+  renderPreview();
+  lastKnownLineIdx = f.lineIdx;
+
+  // Select placeholder trong textarea
   const lines = ta.value.split('\n');
-  const line = lines[lineIdx] || '';
-  const lineStart = lines.slice(0, lineIdx).join('\n').length + (lineIdx > 0 ? 1 : 0);
-  // Nếu dòng có placeholder {xxx} → select nó
+  const lineStart = lines.slice(0, f.lineIdx).join('\n').length + (f.lineIdx > 0 ? 1 : 0);
+  const line = lines[f.lineIdx] || '';
   const ph = line.match(/\{([^}]+)\}/);
   if(ph){
-    const phStart = lineStart + line.indexOf(ph[0]);
-    return { start: phStart, end: phStart + ph[0].length, name: ph[1] };
-  }
-  // Đã có giá trị → đặt caret ở cuối giá trị (trước suffix nếu có)
-  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
-  const tplLines = TPL_BODY.split('\n');
-  const tplLine = tplLines[lineIdx - offset] || '';
-  const mTpl = tplLine.match(/\{([^}]+)\}/);
-  if(mTpl){
-    const suffix = tplLine.substring(tplLine.indexOf(mTpl[0]) + mTpl[0].length);
-    const endOfVal = lineStart + line.length - suffix.length;
-    return { start: endOfVal, end: endOfVal, name: mTpl[1] };
-  }
-  return { start: lineStart + line.length, end: lineStart + line.length, name: '' };
-}
-
-function navField(dir){
-  const ta = document.getElementById('preview');
-  const navLines = getNavigableLineIndices();
-  if(navLines.length === 0) return;
-
-  const cur = caretLineIdx(ta);
-  // Tìm vị trí hiện tại trong danh sách
-  let idx = navLines.findIndex(nl => nl.lineIdx === cur);
-
-  if(idx === -1){
-    // Không ở trường nào → nhảy đến trường đầu (▲) hoặc cuối (▼)
-    idx = dir > 0 ? 0 : navLines.length - 1;
+    const s = lineStart + line.indexOf(ph[0]);
+    ta.focus(); ta.selectionStart = s; ta.selectionEnd = s + ph[0].length;
   } else {
-    idx = idx + dir;
-    if(idx < 0) idx = navLines.length - 1;
-    if(idx >= navLines.length) idx = 0;
+    const s = lineStart + f.prefix.length;
+    ta.focus(); ta.selectionStart = s; ta.selectionEnd = lineStart + line.length - f.suffix.length;
   }
-
-  const target = navLines[idx];
-  const pos = getLineJumpPos(ta, target.lineIdx);
-  ta.focus();
-  ta.selectionStart = pos.start;
-  ta.selectionEnd = pos.end;
   updateFieldLabel();
 }
 
@@ -295,7 +274,8 @@ function setupEditor(){
 
   let lastText = '';
   let lastCaret = 0;
-  let composing = false; // true khi iOS/Android đang compose (gõ tiếng Việt dở)
+  // iOS Safari: compositionend fire TRƯỚC input, nên dùng flag để input sau đó bỏ qua 1 tick
+  let justComposed = false;
 
   ta.addEventListener('focus', ()=>{
     lastText = ta.value;
@@ -304,22 +284,18 @@ function setupEditor(){
   });
 
   ta.addEventListener('click', ()=>{
+    lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
     updateFieldLabel();
     lastCaret = ta.selectionStart;
   });
 
-  // IME events — iOS Safari fire đúng compositionstart/end kể từ iOS 13+
-  ta.addEventListener('compositionstart', ()=>{ composing = true; });
+  // compositionend: đánh dấu vừa compose xong, KHÔNG sync ở đây
+  // vì iOS Safari sẽ fire input ngay sau với text đúng
   ta.addEventListener('compositionend', ()=>{
-    composing = false;
-    // Sau khi compose xong mới sync
-    syncField(ta, lastText, lastCaret);
-    lastText = ta.value;
-    lastCaret = ta.selectionStart;
+    justComposed = true;
   });
 
   ta.addEventListener('keydown', e=>{
-    if(composing) return; // không can thiệp khi đang compose
     if(e.key === 'Enter'){
       e.preventDefault();
       navField(1);
@@ -334,14 +310,20 @@ function setupEditor(){
   });
 
   ta.addEventListener('input', ()=>{
-    // Đang compose (gõ tiếng Việt dở) → KHÔNG rebuild, để bàn phím làm việc tự do
-    if(composing) return;
+    if(justComposed){
+      // input sau compositionend: text đã commit đúng, sync bình thường
+      justComposed = false;
+    }
     syncField(ta, lastText, lastCaret);
     lastText = ta.value;
     lastCaret = ta.selectionStart;
   });
 
-  ta.addEventListener('keyup', ()=>{ if(!composing){ updateFieldLabel(); lastCaret = ta.selectionStart; }});
+  ta.addEventListener('keyup', ()=>{
+    lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
+    updateFieldLabel();
+    lastCaret = ta.selectionStart;
+  });
   ta.addEventListener('selectionchange', ()=>{ updateFieldLabel(); });
 }
 
@@ -405,36 +387,77 @@ function syncField(ta, lastText, lastCaret){
   autoResize(ta);
   updateFieldLabel();
   updateXeChipState();
+  lastKnownLineIdx = lineIdx;
+}
+
+function getNavigableLineIndices(){
+  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
+  const tplLines = TPL_BODY.split('\n');
+  const result = [];
+  tplLines.forEach((tl, ti) => {
+    const m = tl.match(/\{([^}]+)\}/);
+    if(!m) return;
+    const name = m[1];
+    if(name === 'Mô tả') return;
+    if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe') return;
+    result.push({ lineIdx: ti + offset, name });
+  });
+  return result;
 }
 
 function jumpToFirstEmpty(ta){
-  const navLines = getNavigableLineIndices();
-  for(const nl of navLines){
-    const val = nl.name === 'Giá xe' ? xeValue : values[nl.name];
+  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
+  const tplLines = TPL_BODY.split('\n');
+  for(let ti = 0; ti < tplLines.length; ti++){
+    const m = tplLines[ti].match(/\{([^}]+)\}/);
+    if(!m) continue;
+    const name = m[1];
+    if(name === 'Mô tả') continue;
+    if(!INPUT_FIELDS.includes(name) && name !== 'Giá xe') continue;
+    const val = name === 'Giá xe' ? xeValue : values[name];
     if(!val){
-      const pos = getLineJumpPos(ta, nl.lineIdx);
-      ta.focus(); ta.selectionStart = pos.start; ta.selectionEnd = pos.end;
-      updateFieldLabel(); return;
+      selectFieldLine(ta, ti + offset);
+      return;
     }
   }
-  // Tất cả đã có → nhảy vào trường đầu
-  if(navLines.length){
-    const pos = getLineJumpPos(ta, navLines[0].lineIdx);
-    ta.focus(); ta.selectionStart = pos.start; ta.selectionEnd = pos.end;
-    updateFieldLabel();
+  // Tất cả đã nhập → nhảy về trường đầu
+  selectFieldLine(ta, offset);
+}
+
+// Nhảy caret vào 1 dòng (tplLineIdx là index trong text thực)
+function selectFieldLine(ta, lineIdx){
+  lastKnownLineIdx = lineIdx;
+  renderPreview();
+  const lines = ta.value.split('\n');
+  const line = lines[lineIdx] || '';
+  const lineStart = lines.slice(0, lineIdx).join('\n').length + (lineIdx > 0 ? 1 : 0);
+  const ph = line.match(/\{([^}]+)\}/);
+  if(ph){
+    const s = lineStart + line.indexOf(ph[0]);
+    ta.focus(); ta.selectionStart = s; ta.selectionEnd = s + ph[0].length;
+  } else {
+    // Đã có giá trị: select toàn bộ
+    const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
+    const tplLine = TPL_BODY.split('\n')[lineIdx - offset] || '';
+    const mTpl = tplLine.match(/\{([^}]+)\}/);
+    const prefix = mTpl ? tplLine.substring(0, tplLine.indexOf(mTpl[0])) : '';
+    const suffix = mTpl ? tplLine.substring(tplLine.indexOf(mTpl[0]) + mTpl[0].length) : '';
+    const s = lineStart + prefix.length;
+    const e = lineStart + line.length - suffix.length;
+    ta.focus(); ta.selectionStart = s; ta.selectionEnd = e;
   }
+  updateFieldLabel();
 }
 
 function clearField(name){
   if(name === 'Giá xe'){ xeTyped = false; xeValue = ''; xeMode = null; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
   else values[name] = '';
-  renderPreview();
-  const ta = document.getElementById('preview');
-  setTimeout(()=>{
-    const navLines = getNavigableLineIndices();
-    const nl = navLines.find(n => n.name === name);
-    if(nl){ const pos = getLineJumpPos(ta, nl.lineIdx); ta.focus(); ta.selectionStart = pos.start; ta.selectionEnd = pos.end; updateFieldLabel(); }
-  }, 10);
+  const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
+  const ti = TPL_BODY.split('\n').findIndex(l => l.includes('{'+name+'}'));
+  if(ti !== -1){
+    const ta = document.getElementById('preview');
+    setTimeout(()=> selectFieldLine(ta, ti + offset), 10);
+  } else renderPreview();
 }
 
 function getSelectedPlaceholder(ta){
