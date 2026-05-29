@@ -268,96 +268,87 @@ function navField(dir){
   updateFieldLabel();
 }
 
-// ── Editor thông minh ─────────────────────────────────────
+// ── Editor ────────────────────────────────────────────────
 function setupEditor(){
   const ta = document.getElementById('preview');
-
-  let lastText = '';
-  let lastCaret = 0;
-  // iOS Safari: compositionend fire TRƯỚC input, nên dùng flag để input sau đó bỏ qua 1 tick
-  let justComposed = false;
+  let composing = false;
 
   ta.addEventListener('focus', ()=>{
-    lastText = ta.value;
-    lastCaret = ta.selectionStart;
+    lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
     setTimeout(()=> jumpToFirstEmpty(ta), 30);
   });
 
-  ta.addEventListener('click', ()=>{
-    lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
-    updateFieldLabel();
-    lastCaret = ta.selectionStart;
-  });
-
-  // compositionend: đánh dấu vừa compose xong, KHÔNG sync ở đây
-  // vì iOS Safari sẽ fire input ngay sau với text đúng
+  ta.addEventListener('compositionstart', ()=>{ composing = true; });
   ta.addEventListener('compositionend', ()=>{
-    justComposed = true;
+    composing = false;
+    readCurrentLine(ta); // commit sau khi compose xong
   });
 
   ta.addEventListener('keydown', e=>{
+    if(composing) return;
     if(e.key === 'Enter'){
       e.preventDefault();
-      navField(1);
+      // Commit dòng hiện tại trước khi nav
+      readCurrentLine(ta);
+      navField(1); // xuống trường tiếp
       return;
     }
     const sel = getSelectedPlaceholder(ta);
     if(sel && (e.key === 'Backspace' || e.key === 'Delete')){
       e.preventDefault();
       clearField(sel.name);
-      return;
     }
   });
 
   ta.addEventListener('input', ()=>{
-    if(justComposed){
-      // input sau compositionend: text đã commit đúng, sync bình thường
-      justComposed = false;
-    }
-    syncField(ta, lastText, lastCaret);
-    lastText = ta.value;
-    lastCaret = ta.selectionStart;
+    if(composing) return; // đang compose tiếng Việt → không đụng vào
+    readCurrentLine(ta);
   });
 
-  ta.addEventListener('keyup', ()=>{
+  ta.addEventListener('blur', ()=>{
+    readCurrentLine(ta);
+    // Rebuild sau 1 tick để tránh trường hợp blur→focus ngay (bấm nút ▲)
+    setTimeout(()=>{
+      if(document.activeElement !== ta) renderPreview();
+    }, 50);
+  });
+
+  ta.addEventListener('click', ()=>{
     lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
     updateFieldLabel();
-    lastCaret = ta.selectionStart;
+  });
+  ta.addEventListener('keyup', ()=>{
+    if(!composing) lastKnownLineIdx = ta.value.substring(0, ta.selectionStart).split('\n').length - 1;
+    updateFieldLabel();
   });
   ta.addEventListener('selectionchange', ()=>{ updateFieldLabel(); });
 }
 
-// Sync 1 lần sau khi input hoặc compositionend
-function syncField(ta, lastText, lastCaret){
-  const newText = ta.value;
-  const newCaret = ta.selectionStart;
+// Đọc giá trị từ dòng caret hiện tại và lưu vào state — KHÔNG ghi đè ta.value
+function readCurrentLine(ta){
+  const text = ta.value;
+  const caret = ta.selectionStart;
+  const lineIdx = text.substring(0, caret).split('\n').length - 1;
+  lastKnownLineIdx = lineIdx;
 
-  const lineIdx = newText.substring(0, newCaret).split('\n').length - 1;
   const offset = document.getElementById('toggle-moi').checked ? 1 : 0;
   const tplIdx = lineIdx - offset;
   const tplLines = TPL_BODY.split('\n');
-
-  // Caret ở dòng không hợp lệ → phục hồi
-  if(tplIdx < 0 || tplIdx >= tplLines.length){
-    ta.value = lastText; ta.selectionStart = ta.selectionEnd = lastCaret;
-    autoResize(ta); return;
-  }
+  if(tplIdx < 0 || tplIdx >= tplLines.length) return;
 
   const tplLine = tplLines[tplIdx];
   const m = tplLine.match(/\{([^}]+)\}/);
-  if(!m || m[1] === 'Mô tả' || (!INPUT_FIELDS.includes(m[1]) && m[1] !== 'Giá xe')){
-    ta.value = lastText; ta.selectionStart = ta.selectionEnd = lastCaret;
-    autoResize(ta); return;
-  }
-
+  if(!m || m[1] === 'Mô tả') return;
   const fname = m[1];
-  const actualLines = newText.split('\n');
-  const actualLine = actualLines[lineIdx] || '';
+  if(!INPUT_FIELDS.includes(fname) && fname !== 'Giá xe') return;
+
+  const lines = text.split('\n');
+  const line = lines[lineIdx] || '';
   const pIdx = tplLine.indexOf('{'+fname+'}');
   const prefix = tplLine.substring(0, pIdx);
   const suffix = tplLine.substring(pIdx + fname.length + 2);
 
-  let val = actualLine;
+  let val = line;
   if(val.startsWith(prefix)) val = val.substring(prefix.length);
   if(suffix && val.endsWith(suffix)) val = val.substring(0, val.length - suffix.length);
   if(val === '{'+fname+'}') val = '';
@@ -366,28 +357,12 @@ function syncField(ta, lastText, lastCaret){
     if(val){ xeTyped = true; xeMode = null; xeValue = val; document.querySelectorAll('.xe-chip').forEach(x=>x.classList.remove('active')); }
     else { xeTyped = false; xeValue = ''; }
   } else {
+    // Capitalize địa chỉ sau compose — không rebuild ngay
+    if(fname === 'Địa chỉ' && val) val = capitalizeAddr(val);
     values[fname] = val;
   }
-
-  if(fname === 'Địa chỉ' && val){
-    const cap = capitalizeAddr(val);
-    if(cap !== val) values[fname] = cap;
-  }
-
-  // Rebuild giữ caret
-  ta.value = buildText();
-  const rebuiltLines = ta.value.split('\n');
-  const rebuiltLine = rebuiltLines[lineIdx] || '';
-  const prevChars = actualLines.slice(0, lineIdx).join('\n').length + (lineIdx > 0 ? 1 : 0);
-  let caretInLine = newCaret - prevChars;
-  caretInLine = Math.max(prefix.length, Math.min(caretInLine, rebuiltLine.length - suffix.length));
-  const rebuiltPrev = rebuiltLines.slice(0, lineIdx).join('\n').length + (lineIdx > 0 ? 1 : 0);
-  ta.selectionStart = ta.selectionEnd = rebuiltPrev + caretInLine;
-
-  autoResize(ta);
-  updateFieldLabel();
   updateXeChipState();
-  lastKnownLineIdx = lineIdx;
+  autoResize(ta);
 }
 
 function getNavigableLineIndices(){
