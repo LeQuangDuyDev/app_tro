@@ -74,23 +74,12 @@
   .mota-top{display:flex;align-items:center;width:100%;gap:4px;margin-bottom:6px}
   .mota-chips{display:flex;flex-wrap:wrap;gap:4px}
 
-  /* Toggle "Dự án mới" */
-  .row-toggle{justify-content:space-between;padding:0 12px 0 12px;cursor:pointer}
-  .row-toggle-label{font-size:14px;color:var(--text2)}
-  .toggle{position:relative;width:38px;height:23px;flex-shrink:0}
-  .toggle input{opacity:0;width:0;height:0;position:absolute}
-  .track{position:absolute;inset:0;background:var(--border2);border-radius:12px;cursor:pointer;transition:.2s}
-  .track:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:2.5px;
-    background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-  input:checked~.track{background:#3b82f6}
-  input:checked~.track:before{transform:translateX(14px)}
-
   /* Cột nút bên phải card */
   .card-wrap{position:relative;margin-right:46px}
   .side-col{position:absolute;right:-46px;top:0;bottom:0;width:36px;display:flex;flex-direction:column;gap:6px;padding:6px 0}
   .side-btn{
     flex:1;border:1px solid var(--border2);border-radius:var(--radius-sm);
-    background:var(--surface);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;
+    background:var(--surface);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
     -webkit-tap-highlight-color:transparent;transition:all .15s;user-select:none;
     writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:1px;
@@ -98,6 +87,8 @@
   .side-btn:active{transform:scale(.93)}
   .side-btn.s-clear{background:var(--red-bg);border-color:var(--red-border);color:var(--red-text)}
   .side-btn.s-copy{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
+  .side-btn.s-moi{background:var(--surface);border-color:var(--border2);color:var(--text2)}
+  .side-btn.s-moi.on{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
   .side-btn.s-nav{font-size:15px;writing-mode:horizontal-tb;flex:0 0 36px}
   .side-btn.s-nav:active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
 
@@ -114,15 +105,6 @@
 
   <div class="card-wrap">
     <div class="editor-card" id="editor-card">
-
-      <!-- Toggle Dự án mới -->
-      <div class="row row-toggle" onclick="toggleMoi()">
-        <span class="row-toggle-label">Dự án mới</span>
-        <label class="toggle" onclick="event.stopPropagation()">
-          <input type="checkbox" id="toggle-moi" onchange="onToggleMoi()">
-          <span class="track"></span>
-        </label>
-      </div>
 
       <!-- Địa chỉ -->
       <div class="row" id="row-diachi">
@@ -203,6 +185,7 @@
     <!-- Cột nút bên phải -->
     <div class="side-col">
       <button class="theme-btn"        id="theme-btn" onclick="toggleTheme()"></button>
+      <button class="side-btn s-moi"   id="btn-moi" onclick="toggleMoi()">Dự án mới</button>
       <button class="side-btn s-clear" onclick="clearAll()">Xóa trắng</button>
       <button class="side-btn s-copy"  onclick="copyText()">Sao chép</button>
       <button class="side-btn s-nav"   onclick="navPrev()">▲</button>
@@ -333,19 +316,15 @@ document.getElementById('inp-diachi').addEventListener('blur', function(){
 });
 
 // ── Toggle Dự án mới ─────────────────────────────────────
+let moiOn = false;
 function toggleMoi(){
-  const cb = document.getElementById('toggle-moi');
-  cb.checked = !cb.checked;
-  onToggleMoi();
-}
-function onToggleMoi(){
-  const on = document.getElementById('toggle-moi').checked;
-  document.querySelector('.row-toggle').style.background = on ? 'var(--blue-bg)' : '';
+  moiOn = !moiOn;
+  document.getElementById('btn-moi').classList.toggle('on', moiOn);
 }
 
 // ── Build text output ─────────────────────────────────────
 function buildText(){
-  const showMoi = document.getElementById('toggle-moi').checked;
+  const showMoi = moiOn;
   const diachi  = document.getElementById('inp-diachi').value.trim();
   const gia     = document.getElementById('inp-gia').value.trim();
   const dien    = document.getElementById('inp-dien').value.trim();
@@ -409,8 +388,8 @@ function clearAll(){
   document.getElementById('dv-phong').classList.add('on');
   document.getElementById('dv-nguoi').classList.remove('on');
   document.getElementById('suf-dv').textContent = 'k/phòng';
-  document.getElementById('toggle-moi').checked = false;
-  document.querySelector('.row-toggle').style.background = '';
+  moiOn = false;
+  document.getElementById('btn-moi').classList.remove('on');
   const f = document.getElementById('inp-diachi');
   f.focus();
   // iOS fallback: nếu focus không bật bàn phím ngay
