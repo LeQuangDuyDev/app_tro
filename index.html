@@ -92,7 +92,22 @@
   .side-btn.s-nav{font-size:15px;writing-mode:horizontal-tb;flex:0 0 36px}
   .side-btn.s-nav:active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue-text)}
 
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  /* Lầu + Thang row */
+  .lau-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+  .lau-dropdown-wrap{position:relative}
+  .lau-menu{
+    display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:50;
+    background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);
+    overflow:hidden;min-width:80px;box-shadow:0 4px 12px rgba(0,0,0,.12);
+  }
+  .lau-menu span{
+    display:block;padding:7px 14px;font-size:12px;color:var(--text);cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .lau-menu span:hover,.lau-menu span:active{background:var(--blue-bg);color:var(--blue-text)}
+  .lau-menu.open{display:block}
+
+position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
     background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;
     white-space:nowrap;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none}
   [data-theme='dark'] .toast{background:#fff;color:#111}
@@ -125,6 +140,23 @@
           <span id="mota-preview" style="font-size:14px;color:var(--text3);font-style:italic;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{Mô tả}</span>
         </div>
         <div class="mota-chips" id="mota-chips"></div>
+        <!-- Lầu + Thang -->
+        <div class="lau-row">
+          <!-- Dropdown Lầu -->
+          <div class="lau-dropdown-wrap">
+            <span class="mc" id="lau-btn" onclick="toggleLauMenu()">Trệt ▾</span>
+            <div class="lau-menu" id="lau-menu">
+              <span onclick="setLau('Trệt',this)">Trệt</span>
+              <span onclick="setLau('Lầu 1',this)">Lầu 1</span>
+              <span onclick="setLau('Lầu 2',this)">Lầu 2</span>
+              <span onclick="setLau('Lầu 3',this)">Lầu 3</span>
+              <span onclick="setLau('Lầu 4',this)">Lầu 4</span>
+              <span onclick="setLau('Lầu 5',this)">Lầu 5</span>
+            </div>
+          </div>
+          <!-- Toggle Thang -->
+          <span class="mc on" id="thang-btn" onclick="toggleThang()">Thang bộ</span>
+        </div>
       </div>
 
       <!-- Điện -->
@@ -197,7 +229,7 @@
 
 <script>
 // ── Config ────────────────────────────────────────────────
-const MOTA_OPTS = ['1PN','2PN','1PK','Studio','Duplex','Ban công','Cửa sổ','Cửa sổ trời','Tách bếp','Máy giặt riêng','Máy giặt','Máy sấy','Bảo vệ','Thang máy','Mặt tiền đường'];
+const MOTA_OPTS = ['1PN','2PN','1PK','Studio','Duplex','Ban công','Cửa sổ','Cửa sổ trời','Tách bếp','Máy giặt riêng','Bảo vệ', 'Mặt tiền đường'];
 const ADDR_LOWER = new Set(['đường','quận','phường','hẻm','ngõ','xã','thị','tổ','và','số','tại']);
 const NAV_IDS = ['inp-diachi','inp-gia','inp-dien','inp-nuoc','inp-dv','inp-xe'];
 
@@ -205,6 +237,8 @@ const NAV_IDS = ['inp-diachi','inp-gia','inp-dien','inp-nuoc','inp-dv','inp-xe']
 let nuocUnit = 'người';
 let dvUnit   = 'phòng';
 let xeMode   = null;
+let lauVal   = 'Trệt';
+let thangVal = 'Thang bộ';
 
 // ── Boot ──────────────────────────────────────────────────
 initTheme();
@@ -315,6 +349,27 @@ document.getElementById('inp-diachi').addEventListener('blur', function(){
   if(this.value) this.value = capitalizeAddr(this.value);
 });
 
+// ── Lầu dropdown ─────────────────────────────────────────
+function toggleLauMenu(){
+  document.getElementById('lau-menu').classList.toggle('open');
+}
+function setLau(val){
+  lauVal = val;
+  document.getElementById('lau-btn').textContent = val + ' ▾';
+  document.getElementById('lau-menu').classList.remove('open');
+}
+function toggleThang(){
+  thangVal = thangVal === 'Thang bộ' ? 'Thang máy' : 'Thang bộ';
+  const btn = document.getElementById('thang-btn');
+  btn.textContent = thangVal;
+  btn.classList.toggle('on', thangVal === 'Thang bộ');
+}
+// Đóng dropdown khi click ngoài
+document.addEventListener('click', e => {
+  if(!e.target.closest('.lau-dropdown-wrap'))
+    document.getElementById('lau-menu').classList.remove('open');
+});
+
 // ── Toggle Dự án mới ─────────────────────────────────────
 let moiOn = false;
 function toggleMoi(){
@@ -335,8 +390,8 @@ function buildText(){
   const xeLine  = xeMode ? xeMode : (xeVal ? xeVal + 'k/xe' : '{Giá xe}k/xe');
 
   const lines = [
-    '📍'  + (diachi || '{Địa chỉ}'),
-    '💰 Giá: ' + (gia || '{Giá}') + ' - ' + (mota || '{Mô tả}'),
+    '📍' + (diachi || '{Địa chỉ}'),
+    '💰 Giá: ' + (gia || '{Giá}') + ' - ' + (mota || '{Mô tả}') + ' - ' + lauVal + ', ' + thangVal,
     '⚡ Điện: ' + (dien || '{Giá điện}') + 'k/Kwh',
     '💧 Nước: ' + (nuoc || '{Giá nước}') + 'k/' + nuocUnit,
     '🛋️ Dịch vụ: ' + (dv || '{Phí dịch vụ}') + 'k/' + dvUnit,
@@ -388,6 +443,12 @@ function clearAll(){
   document.getElementById('dv-phong').classList.add('on');
   document.getElementById('dv-nguoi').classList.remove('on');
   document.getElementById('suf-dv').textContent = 'k/phòng';
+  lauVal = 'Trệt';
+  document.getElementById('lau-btn').textContent = 'Trệt ▾';
+  thangVal = 'Thang bộ';
+  const thangBtn = document.getElementById('thang-btn');
+  thangBtn.textContent = 'Thang bộ';
+  thangBtn.classList.add('on');
   moiOn = false;
   document.getElementById('btn-moi').classList.remove('on');
   const f = document.getElementById('inp-diachi');
